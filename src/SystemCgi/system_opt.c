@@ -442,32 +442,43 @@ HB_S32 SetWanConnection(HB_CHAR *src_buf)
 		sprintf(sql, "UPDATE system_web_data SET wan_connection = '%s'", arrcWanConnection);
 		SqlOperation(sql, BOX_DATA_BASE_NAME, NULL, NULL);
 
+		//若开启广域网，需要重新获取验证服务器地址
+		int iSockFd = -1;
+		struct sockaddr_in serverAddr;
+		iSockFd=socket(AF_INET,SOCK_STREAM,0);
+
+		memset(&serverAddr,0,sizeof(serverAddr));
+		serverAddr.sin_family=AF_INET;
+		serverAddr.sin_addr.s_addr=inet_addr("127.0.0.1");
+		serverAddr.sin_port=htons(7879);
+
 		if (atoi(arrcWanConnection) == 0)  //1开启广域网，0关闭广域网
 		{
-			system("killall -9 gnLan");
-		}
-		else
-		{
-			//若开启广域网，需要重新获取验证服务器地址
-			int conndfd = -1;
-			struct sockaddr_in serverAddr;
-			char buf[8] = {0};
-			conndfd=socket(AF_INET,SOCK_STREAM,0);
-
-			memset(&serverAddr,0,sizeof(serverAddr));
-			serverAddr.sin_family=AF_INET;
-			serverAddr.sin_addr.s_addr=inet_addr("127.0.0.1");
-			serverAddr.sin_port=htons(7879);
-			if(-1==connect(conndfd,(struct sockaddr*)&serverAddr,sizeof(serverAddr)))
+			if(-1==connect(iSockFd,(struct sockaddr*)&serverAddr,sizeof(serverAddr)))
 			{
 				WRITE_LOG("Connetc iptable server failed\n");
 			}
 			else
 			{
-				WRITE_LOG("send GetStreamInfo\n");
-				send(conndfd, "GetStreamInfo", strlen("GetStreamInfo"), 0);
-				close(conndfd);
-				conndfd = -1;
+				WRITE_LOG("send SetWan&Value=0\n");
+				send(iSockFd, "SetWan&Value=0", strlen("GetStreamInfo"), 0);
+				close(iSockFd);
+				iSockFd = -1;
+			}
+		}
+		else
+		{
+			//若开启广域网，需要重新获取验证服务器地址
+			if(-1==connect(iSockFd,(struct sockaddr*)&serverAddr,sizeof(serverAddr)))
+			{
+				WRITE_LOG("Connetc iptable server failed\n");
+			}
+			else
+			{
+				WRITE_LOG("send GetStreamInfo&SetWan&Value=1\n");
+				send(iSockFd, "GetStreamInfo&SetWan&Value=1", strlen("GetStreamInfo&SetWan&Value=1"), 0);
+				close(iSockFd);
+				iSockFd = -1;
 			}
 		}
 	}

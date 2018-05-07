@@ -30,7 +30,7 @@ lan_cgi_clean:
 endif
 
 
-ifeq ($(strip $(BOX_TYPE)), $(filter $(BOX_TYPE), small_box big_box_single_port))
+ifeq ($(strip $(BOX_TYPE)), $(filter $(BOX_TYPE), small_box big_box_single_port small_box_hisi300))
 lan_cgi:
 ifeq ($(BOX_TYPE_SUB), big_small_box_single_mulip_port)
 	$(MAKE) -C src/LanCgi_SmallBigSigPort_mul_ip

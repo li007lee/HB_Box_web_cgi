@@ -322,8 +322,20 @@ HB_S32 CgiInitAndConfig(HB_CHAR **buf, HB_CHAR *p_session_save_path)
 		return -1;
 	}
 
+
 	cgi_init();
 	cgi_session_cookie_name("MY_COOKIE");
+//	if (cBufSize != NULL)
+//	{
+//		sscanf(cBufSize, "%d", &len);
+//		*buf = (HB_CHAR *) malloc(sizeof(HB_CHAR) * (len + 2));
+//		//dst_buf = (HB_CHAR *) malloc(sizeof(HB_CHAR) * (len + 2));
+//		fgets(*buf, len + 1, stdin);    //从标准输入中读取len个字符
+//		WRITE_LOG("MY_COOKIE :[%s]\n", *buf);
+//		//strncpy(dst_buf, buf, sizeof(dst_buf));
+//		//free(buf);
+//	}
+
 	buf_len = getenv("CONTENT_LENGTH"); //获取输入字符长度
 	if (buf_len != NULL)
 	{
@@ -338,6 +350,7 @@ HB_S32 CgiInitAndConfig(HB_CHAR **buf, HB_CHAR *p_session_save_path)
 	cgi_process_form();
 	cgi_session_save_path(p_session_save_path);
 	cgi_session_start();
+//	WRITE_LOG("MY_COOKIE :[%d]\n", cgi_session_var_exists("MY_COOKIE"));
 	return 0;
 }
 

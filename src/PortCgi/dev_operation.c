@@ -1189,6 +1189,7 @@ HB_S32 DelOneRtspDev(HB_CHAR *buf)
 	{
 		sscanf(pPos, "DataIndex=%[^&]&DevId=%s", index, cDevId);
 
+		url_decode(cDevId, strlen(cDevId));
 		sprintf(stBufCmd.cBuffer, "{\"TYPE\":\"DelOnvifDev\", \"DevId\":\"%s\"}", cDevId);
 
 		snprintf(stBufCmd.cBuffer, sizeof(stBufCmd.cBuffer), "{\"TYPE\":\"DelOnvifDev\", \"DevId\":\"%s\"}", cDevId+iOffset);
@@ -1580,63 +1581,139 @@ static HB_S32 get_onvif_list(HB_CHAR *buf, FIFO_HANDLE iRtspListInfo)
 //获取当前添加onvif的进度
 HB_S32 get_add_rtsp_present(HB_CHAR *buf)
 {
-	HB_S32 	fd = -1;
 	HB_S32	iPercent = 0;
+	HB_S32	iPercent2 = 0;
+	static HB_S32 iCount = 0; //由于采集端有采集延时，此值用于记录获取的次数，若总是获取不到，则报错返回
+	static HB_S32 iSamePercent = 0; //用于记录多次采集到的百分比的值是否一样，若总是一样说明采集端出了问题，需要报错返回
+	HB_S32 shmid;//共享内存标识符
+	HB_VOID *shm = NULL;
 	FIFO_HANDLE fifo_main = NULL;
 
-	fd = open("/tmp/fifo1", O_CREAT | O_RDWR, 0666);
-	ftruncate(fd, sizeof(HB_S32));
+	sleep(1);
 
-	fifo_main = *(FIFO_HANDLE)mmap(NULL, sizeof(FIFO_OBJ), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if (fifo_main != NULL && (fifo_main->iTotalChnlCount > 0))
+	//创建共享内存
+	shmid = shmget((key_t)1234, sizeof(FIFO_OBJ), 0666|IPC_CREAT);
+	if(shmid == -1)
 	{
-		iPercent = fifo_main->iCurChnlNum * 100 / fifo_main->iTotalChnlCount;
-	}
-	else
-	{
-		munmap(fifo_main, sizeof(FIFO_OBJ));
-		fifo_main = NULL;
-		close(fd);
-		printf("{\"Result\":\"-231\",\"ErrMessage\":\"百分比获取失败！-231\"}");
-		system("rm -f /tmp/fifo1");
+		printf("{\"Result\":\"-234\",\"ErrMessage\":\"百分比获取失败！-234\"}\n");
+		WRITE_LOG("{\"Result\":\"-234\",\"ErrMessage\":\"百分比获取失败！-234\"}\n");
 		return -1;
 	}
-
-	if ((iPercent > 100) || (iPercent < 0))
-	{
-		munmap(fifo_main, sizeof(FIFO_OBJ));
-		fifo_main = NULL;
-		close(fd);
-//		printf("Content type: application/json \n\n");
-		printf("{\"Result\":\"-233\",\"ErrMessage\":\"百分比异常！-233\"}");
-		system("rm -f /tmp/fifo1");
+    //将共享内存连接到当前进程的地址空间
+	shm = (FIFO_HANDLE)shmat(shmid, 0, 0);
+    if(shm == (HB_VOID*)-1)
+    {
+		printf("{\"Result\":\"-23411\",\"ErrMessage\":\"百分比获取失败！-23411\"}\n");
+		WRITE_LOG("{\"Result\":\"-23411\",\"ErrMessage\":\"百分比获取失败！-23411\"}\n");
 		return -1;
-	}
-
-
-	if (iPercent == 100)
+    }
+    fifo_main = (FIFO_HANDLE)shm;
+	if (fifo_main->iTotalChnlCount > 0)
 	{
-		if (strlen(fifo_main->cMsg) == 0)
+		if (fifo_main->iCurChnlNum < 0)
 		{
-			close(fd);
-			printf("{\"Result\":\"-232\",\"ErrMessage\":\"rtsp列表为空！-232\"}");
+			printf("{\"Result\":\"-237\",\"ErrMessage\":\"%s！-237\"}", fifo_main->cMsg);
+			WRITE_LOG("{\"Result\":\"-237\",\"ErrMessage\":\"%s！-237\"}", fifo_main->cMsg);
+		    shmdt(shm);//把共享内存从当前进程中分离
+		    shmctl(shmid, IPC_RMID, 0);//删除共享内存
 			return -2;
 		}
-		get_onvif_list(buf, fifo_main);
-		munmap(fifo_main, sizeof(FIFO_OBJ));
-		fifo_main = NULL;
-		close(fd);
-		system("rm -f /tmp/fifo1");
-	}
-	else
-	{
-		munmap(fifo_main, sizeof(FIFO_OBJ));
-		fifo_main = NULL;
-		printf("Content type: application/json \n\n");
-		printf("{\"Result\":\"1\",\"Percent\":\"%d\"}", iPercent);
-		close(fd);
+		iPercent = fifo_main->iCurChnlNum * 100 / fifo_main->iTotalChnlCount;
+		if (iPercent == 100)
+		{
+			if (strlen(fifo_main->cMsg) == 0)
+			{
+				printf("{\"Result\":\"-232\",\"ErrMessage\":\"rtsp列表为空！-232\"}");
+				WRITE_LOG("{\"Result\":\"-232\",\"ErrMessage\":\"rtsp列表为空！-232\"}");
+			    shmdt(shm);//把共享内存从当前进程中分离
+			    shmctl(shmid, IPC_RMID, 0);//删除共享内存
+				return -2;
+			}
+			get_onvif_list(buf, fifo_main);
+			shmdt(shm);//把共享内存从当前进程中分离
+			shmctl(shmid, IPC_RMID, 0);//删除共享内存
+			return 0;
+		}
 	}
 
+
+	while(1)
+	{
+		sleep(1);
+		if (fifo_main->iTotalChnlCount > 0)
+		{
+			if (fifo_main->iCurChnlNum < 0)
+			{
+				printf("{\"Result\":\"-237\",\"ErrMessage\":\"%s！-237\"}", fifo_main->cMsg);
+				WRITE_LOG("{\"Result\":\"-237\",\"ErrMessage\":\"%s！-237\"}", fifo_main->cMsg);
+			    shmdt(shm);//把共享内存从当前进程中分离
+			    shmctl(shmid, IPC_RMID, 0);//删除共享内存
+				return -2;
+			}
+			iPercent2 = fifo_main->iCurChnlNum * 100 / fifo_main->iTotalChnlCount;
+			if (iPercent2 == iPercent)
+			{
+				iSamePercent++;
+				if(iSamePercent > 5)
+				{
+					printf("{\"Result\":\"-235\",\"ErrMessage\":\"百分比获取失败！-235\"}\n");
+					WRITE_LOG("{\"Result\":\"-235\",\"ErrMessage\":\"百分比获取失败！-235\"}\n");
+					shmdt(shm);//把共享内存从当前进程中分离
+					shmctl(shmid, IPC_RMID, 0);//删除共享内存
+					return -1;
+				}
+				WRITE_LOG("iSamePercent=%d, iVideoSourcesNums=%d, iTotalChnlCount=%d, iCurChnlNum=%d\n", \
+						iSamePercent, fifo_main->iVideoSourcesNums, fifo_main->iTotalChnlCount, fifo_main->iCurChnlNum);
+				continue;
+			}
+		}
+		else
+		{
+			if (fifo_main->iCurChnlNum < 0)
+			{
+				printf("{\"Result\":\"-237\",\"ErrMessage\":\"%s！-237\"}", fifo_main->cMsg);
+				WRITE_LOG("{\"Result\":\"-237\",\"ErrMessage\":\"%s！-237\"}", fifo_main->cMsg);
+			    shmdt(shm);//把共享内存从当前进程中分离
+			    shmctl(shmid, IPC_RMID, 0);//删除共享内存
+				return -2;
+			}
+
+			if (++iCount > 5)
+			{
+				printf("{\"Result\":\"-236\",\"ErrMessage\":\"百分比获取失败！-236\"}\n");
+				WRITE_LOG("{\"Result\":\"-236\",\"ErrMessage\":\"百分比获取失败！-236\"}\n");
+				shmdt(shm);//把共享内存从当前进程中分离
+				shmctl(shmid, IPC_RMID, 0);//删除共享内存
+				return -1;
+			}
+			WRITE_LOG("iCount=%d, iVideoSourcesNums=%d, iTotalChnlCount=%d, iCurChnlNum=%d\n", \
+					iCount, fifo_main->iVideoSourcesNums, fifo_main->iTotalChnlCount, fifo_main->iCurChnlNum);
+			continue;
+		}
+
+		if (iPercent2 == 100)
+		{
+			if (strlen(fifo_main->cMsg) == 0)
+			{
+				printf("{\"Result\":\"-232\",\"ErrMessage\":\"rtsp列表为空！-232\"}");
+				WRITE_LOG("{\"Result\":\"-232\",\"ErrMessage\":\"rtsp列表为空！-232\"}");
+				shmdt(shm);//把共享内存从当前进程中分离
+				shmctl(shmid, IPC_RMID, 0);//删除共享内存
+				return -2;
+			}
+			get_onvif_list(buf, fifo_main);
+			shmdt(shm);//把共享内存从当前进程中分离
+			shmctl(shmid, IPC_RMID, 0);//删除共享内存
+			break;
+		}
+		else
+		{
+			printf("{\"Result\":\"1\",\"Percent\":\"%d\"}", iPercent);
+			WRITE_LOG("{\"Result\":\"1\",\"Percent\":\"%d\"}", iPercent);
+			shmdt(shm);//把共享内存从当前进程中分离
+			break;
+		}
+	}
 
 	return 0;
 }

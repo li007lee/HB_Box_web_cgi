@@ -39,6 +39,7 @@ HB_S32 main()
 					case DISCOVER_RTSP_DEV:	DiscoverRtspDev(); break; //搜索onvif设备（搜索onvif设备）
 					case REFRESH_RTSP_DEV: break;//更新数据库中onvif设备列表，当已添加的设备修改了端口，可以用词操作同步更新数据库中的数据
 					case GET_ADD_RTSP_PERSENT: get_add_rtsp_present(buf);break;//获取添加onvife设备时的进度
+//					case GET_ADD_RTSP_PERSENT: printf("{\"Result\":\"1\",\"Percent\":\"%10\"}"); break;
 
 					case ADD_TCP_DEV: AddTcpDev(buf); break;	//添加TCP设备
 					case DEL_ONE_TCP_DEV: DelOneTcpDev(buf); break;	//删除一条TCP设备

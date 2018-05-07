@@ -63,10 +63,10 @@ typedef struct _tagONVIF_DEV_INFO
 
 typedef struct _tagFIFO
 {
-	HB_U32 	iVideoSourcesNums;//视频源总数
-	HB_U32 	iTotalChnlCount;//获取到的token总数量
-	HB_U32	iCurChnlNum;  //当前获取到的token数量
-	HB_CHAR cMsg[40960];	//错误消息或列表
+	HB_S32 	iVideoSourcesNums;//视频源总数
+	HB_S32 	iTotalChnlCount;//获取到的token总数量
+	HB_S32	iCurChnlNum;  //当前获取到的token数量
+	HB_CHAR cMsg[2048];	//错误消息或列表
 }FIFO_OBJ, *FIFO_HANDLE;
 
 typedef enum
