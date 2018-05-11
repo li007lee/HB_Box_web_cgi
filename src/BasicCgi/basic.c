@@ -27,12 +27,9 @@ HB_S32 main()
 		box_dev.dev_list_head->next = NULL;
 	}
 #if 1
-	HB_S32 flag = 1;
 	CgiInitAndConfig(&buf, CGI_SESSION_SAVE_PATH);
 	//判断session是否已经创建，如果没有创建则直接返回登出状态
-	if ((cgi_session_var_exists("USER_NAME")
-					&& cgi_session_var_exists("PASSWORD")
-					&& cgi_session_var_exists("LAST_ACCESS_TIME")) || (flag)) //服务器端有session文件
+	if ((cgi_session_var_exists("USER_NAME") && cgi_session_var_exists("PASSWORD") && cgi_session_var_exists("LAST_ACCESS_TIME"))) //服务器端有session文件
 #endif
 	{
 		if (!cgi_session_var_exists("USER_NAME"))
