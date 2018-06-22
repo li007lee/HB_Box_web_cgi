@@ -248,7 +248,7 @@ HB_S32 ChangeUserPwd(HB_CHAR *src_buf)
 				printf("{\"Result\":\"-410\",\"ErrMessage\":\"新用户名输入错误！用户名只能包含字母和数字！-410\"}");
 				return -1;
 			}
-			if (usr_name_len < 5 || usr_name_len >15)
+			if (usr_name_len < 5 || usr_name_len >16)
 			{
 				printf("{\"Result\":\"-411\",\"ErrMessage\":\"用户名长度必须为5到16个字符！-411\"}");
 				return -2;
