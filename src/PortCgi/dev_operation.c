@@ -408,6 +408,8 @@ HB_S32 AddBoxDev(HB_S32 i_data_code, HB_CHAR *buf)
 
 		//获取厂家id
 		url_decode(c_dev_type_name, strlen(c_dev_type_name));
+		url_decode(c_dev_pwd, strlen(c_dev_pwd));
+		WRITE_LOG("c_dev_type_name:[%s], user_name:[%s], user_passwd:[%s]!\n", c_dev_type_name, c_dev_user, c_dev_pwd);
 		memset(sql, 0, sizeof(sql));
 		snprintf(sql, sizeof(sql), "select * from factory_list_data where factory_name = '%s' ", c_dev_type_name);
 		SqlOperation(sql, BOX_DATA_BASE_NAME, LoadDeviceFactory, (void *)c_dev_type_code);
@@ -1192,7 +1194,7 @@ HB_S32 DelOneRtspDev(HB_CHAR *buf)
 		url_decode(cDevId, strlen(cDevId));
 		sprintf(stBufCmd.cBuffer, "{\"TYPE\":\"DelOnvifDev\", \"DevId\":\"%s\"}", cDevId);
 
-		snprintf(stBufCmd.cBuffer, sizeof(stBufCmd.cBuffer), "{\"TYPE\":\"DelOnvifDev\", \"DevId\":\"%s\"}", cDevId+iOffset);
+		snprintf(stBufCmd.cBuffer, sizeof(stBufCmd.cBuffer), "{\"TYPE\":\"DelOnvifDev\", \"DevId\":\"%s\"}", cDevId);
 		stBufCmd.iActLength = 5*sizeof(HB_S32) + strlen(stBufCmd.cBuffer);
 		ret = NetworkCommunicate(&sockfd, MAIN_CTRL_IP, MAIN_CTRL_PORT, (HB_CHAR *)&stBufCmd, stBufCmd.iActLength, sizeof(stBufCmd.cBuffer), 10);
 		if (ret < 0)
@@ -1286,17 +1288,14 @@ static HB_S32 load_rtsp_list_port_page( HB_VOID * para, HB_S32 n_column, HB_CHAR
 {
 	HB_CHAR *dev_info_buf = (HB_CHAR *)para;
 	HB_CHAR cDevName[512] = {0};
-	HB_CHAR cMacSn[32] = {0};
 	HB_CHAR buf_var[1024] = {0};
 
 	strncpy(cDevName, column_value[2], sizeof(cDevName));
 	url_decode(cDevName, strlen(cDevName));
 
-	get_sys_sn(cMacSn, sizeof(cMacSn));
-
     //获取盒子信息
-	snprintf(buf_var, sizeof(buf_var), "{\"DevIp\":\"%s\",\"DevId\":\"%s-%s\",\"DevName\":\"%s\",\"DevChnls\":\"%s\"},",\
-			column_value[0], cMacSn, column_value[1], cDevName, column_value[3]);
+	snprintf(buf_var, sizeof(buf_var), "{\"DevIp\":\"%s\",\"DevId\":\"%s\",\"DevName\":\"%s\",\"DevChnls\":\"%s\"},",\
+			column_value[0], column_value[1], cDevName, column_value[3]);
 	strncat(dev_info_buf, buf_var, BUF_LEN_OF_JSON-strlen(dev_info_buf));
 	return 0;
 }
@@ -1473,7 +1472,8 @@ static HB_S32 get_onvif_list(HB_CHAR *buf, FIFO_HANDLE iRtspListInfo)
 
 		url_decode(stOnvifDevInfo.cDevServiceUrl, strlen(stOnvifDevInfo.cDevServiceUrl));
 
-		HB_CHAR c_mac_sn[32] = {0};
+		HB_CHAR cMacSn[32] = {0};
+		get_sys_sn(cMacSn, sizeof(cMacSn));
 		//设备搜索成功，进行json串的解析以及插入数据库
 		snprintf(cCalcBasicAuth, sizeof(cCalcBasicAuth), "%s:%s", stOnvifDevInfo.cDevLoginUsr, stOnvifDevInfo.cDevLoginPasswd);
 		base64_encode(stOnvifDevInfo.cBasicAuth, (HB_U8 *)cCalcBasicAuth, strlen(cCalcBasicAuth), sizeof(stOnvifDevInfo.cBasicAuth));
@@ -1481,7 +1481,8 @@ static HB_S32 get_onvif_list(HB_CHAR *buf, FIFO_HANDLE iRtspListInfo)
 		cJSON *pItem = NULL;
 		cJSON *pJsonRoot = cJSON_Parse(iRtspListInfo->cMsg); //json根
 		pItem = cJSON_GetObjectItem(pJsonRoot,"OnvifDevId");
-		strncpy(stOnvifDevInfo.cDevId, pItem->valuestring, strlen(pItem->valuestring));
+//		strncpy(stOnvifDevInfo.cDevId, pItem->valuestring, strlen(pItem->valuestring));
+		snprintf(stOnvifDevInfo.cDevId, sizeof(stOnvifDevInfo.cDevId), "YDT-ONVIF-%s-%s", cMacSn, pItem->valuestring);
 		pItem = cJSON_GetObjectItem(pJsonRoot,"ChlNums");
 		strncpy(stOnvifDevInfo.cDevChnls, pItem->valuestring, strlen(pItem->valuestring));
 		cJSON *pChlListArry=cJSON_GetObjectItem(pJsonRoot,"ChlList");//取数组
@@ -1558,12 +1559,11 @@ static HB_S32 get_onvif_list(HB_CHAR *buf, FIFO_HANDLE iRtspListInfo)
 		sqlite3_free(errmsg);
 		sqlite3_close(db);
 
-		get_sys_sn(c_mac_sn, sizeof(c_mac_sn));
 		url_decode(stOnvifDevInfo.cDevName, strlen(stOnvifDevInfo.cDevName));
-		printf("{\"Result\":\"0\",\"DataIndex\":\"%s\",\"DevId\":\"%s-%s\",\"DevName\":\"%s\",\"DevIp\":\"%s\",\"DevChnls\":\"%s\"}", \
-			cDataIndex, c_mac_sn, stOnvifDevInfo.cDevId, stOnvifDevInfo.cDevName, stOnvifDevInfo.cDevIp, stOnvifDevInfo.cDevChnls);
-		WRITE_LOG("send to web:[{\"Result\":\"0\",\"DataIndex\":\"%s\",\"DevId\":\"%s-%s\",\"DevName\":\"%s\",\"DevIp\":\"%s\",\"DevChnls\":\"%s\"}]\n", \
-			cDataIndex, c_mac_sn, stOnvifDevInfo.cDevId, stOnvifDevInfo.cDevName, stOnvifDevInfo.cDevIp, stOnvifDevInfo.cDevChnls);
+		printf("{\"Result\":\"0\",\"DataIndex\":\"%s\",\"DevId\":\"%s\",\"DevName\":\"%s\",\"DevIp\":\"%s\",\"DevChnls\":\"%s\"}", \
+			cDataIndex, stOnvifDevInfo.cDevId, stOnvifDevInfo.cDevName, stOnvifDevInfo.cDevIp, stOnvifDevInfo.cDevChnls);
+		WRITE_LOG("send to web:[{\"Result\":\"0\",\"DataIndex\":\"%s\",\"DevId\":\"%s\",\"DevName\":\"%s\",\"DevIp\":\"%s\",\"DevChnls\":\"%s\"}]\n", \
+			cDataIndex, stOnvifDevInfo.cDevId, stOnvifDevInfo.cDevName, stOnvifDevInfo.cDevIp, stOnvifDevInfo.cDevChnls);
 
 		memset(stBufCmd.cBuffer, 0, sizeof(stBufCmd.cBuffer));
 		snprintf(stBufCmd.cBuffer, sizeof(stBufCmd.cBuffer), "{\"TYPE\":\"RegisterOnvifDev\",\"DevId\":\"%s\"}", stOnvifDevInfo.cDevId);

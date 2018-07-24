@@ -17,6 +17,9 @@ static void alarm_func()
 static struct hostent *gethostbyname_timeout(const char *domain, int timeout)
 {
 #if 1
+//	struct ifaddrs *ifaddr, *ifa;
+//	int family, s;
+	char host[NI_MAXHOST];
     struct hostent *ipHostent = NULL;
     signal(SIGALRM, alarm_func);
     if(sigsetjmp(sig_jmp_buf, 1) != 0)
@@ -27,6 +30,12 @@ static struct hostent *gethostbyname_timeout(const char *domain, int timeout)
     }
     alarm(timeout);//setting alarm
     ipHostent = gethostbyname(domain);
+//    s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+//	if (s != 0) {
+//		WRITE_LOG("getnameinfo() failed: %s\n", gai_strerror(s));
+//		return NULL;
+//	}
+//	WRITE_LOG("\taddress: <%s>\n", host);
     signal(SIGALRM, SIG_IGN);
     return ipHostent;
 #endif

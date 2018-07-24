@@ -250,7 +250,6 @@ HB_S32 GetBasicBoxDevList(BOX_PAIR_HEAD_HANDLE box_dev)
 {
 	HB_CHAR *sql = "select dev_id,factory_list_data.factory_name,dev_name,dev_login_usr,dev_login_pwd,dev_ip,dev_port,box_port,dev_chns,dev_state,dev_port2,box_port2 from dev_add_web_data left join factory_list_data on dev_add_web_data.dev_type=factory_list_data.factory_code";
 	BOX_PAIR_DEV_LIST_HANDLE box_dev_flag = NULL;
-	HB_S32 ret = 0;
 
 	SqlOperation(sql, BOX_DATA_BASE_NAME, LoadDeviceInfo, (void *) box_dev);
 	box_dev_flag = box_dev->dev_list_head->next;
@@ -258,9 +257,9 @@ HB_S32 GetBasicBoxDevList(BOX_PAIR_HEAD_HANDLE box_dev)
 	{
 		pthread_attr_t attr;
 		pthread_t connect_test_pthread_id;
-		ret = pthread_attr_init(&attr);
-		ret = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-		ret = pthread_create(&connect_test_pthread_id, &attr, connect_ip_test, box_dev_flag);
+		pthread_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+		pthread_create(&connect_test_pthread_id, &attr, connect_ip_test, box_dev_flag);
 		pthread_attr_destroy(&attr);
 		box_dev_flag = box_dev_flag->next;
 	}
@@ -384,7 +383,6 @@ HB_S32 GetBasicTcpDevList(TCP_PAIR_HEAD_HANDLE tcp_dev)
 {
 	HB_CHAR *sql = "select tcp_dev_ip,tcp_dev_port,tcp_dev_name,tcp_box_port from tcp_dev_data";
 	TCP_PAIR_HEAD_HANDLE tcp_dev_flag = NULL;
-	HB_S32 ret = 0;
 
 	SqlOperation(sql, BOX_DATA_BASE_NAME, LoadTcpDevInfo, (void *) tcp_dev);
 
@@ -393,9 +391,9 @@ HB_S32 GetBasicTcpDevList(TCP_PAIR_HEAD_HANDLE tcp_dev)
 	{
 		pthread_attr_t attr;
 		pthread_t connect_test_pthread_id;
-		ret = pthread_attr_init(&attr);
-		ret = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-		ret = pthread_create(&connect_test_pthread_id, &attr, ConnectIpTest, tcp_dev_flag);
+		pthread_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+		pthread_create(&connect_test_pthread_id, &attr, ConnectIpTest, tcp_dev_flag);
 		pthread_attr_destroy(&attr);
 		tcp_dev_flag = tcp_dev_flag->next;
 	}
@@ -513,10 +511,7 @@ HB_VOID GetBasicRtspDevList(RTSP_DEV_LIST_HANDLE pRtspDevList)
 
 HB_S32 MakeJsonRtsp(HB_CHAR *pRtspListBuf, HB_S32 iRtspListBufLen, RTSP_DEV_LIST_HANDLE pRtspDev)
 {
-	HB_CHAR cMacSn[32] = {0};
 	HB_CHAR buf_var[1024] = { 0 };
-
-	get_sys_sn(cMacSn, sizeof(cMacSn));
 
 	while (pRtspDev)
 	{
@@ -530,10 +525,10 @@ HB_S32 MakeJsonRtsp(HB_CHAR *pRtspListBuf, HB_S32 iRtspListBufLen, RTSP_DEV_LIST
 
 		snprintf(buf_var, sizeof(buf_var),
 			"{\"DevName\": \"%s\", \"DevIP\":\"%s\", \"DevPort\":\"%d\", "
-			"\"DevChnl\":\"%d\", \"DevConnectStatus\":\"%d\", \"DevId\":\"%s-%s\", "
+			"\"DevChnl\":\"%d\", \"DevConnectStatus\":\"%d\", \"DevId\":\"%s\", "
 			"\"DevLoginName\":\"%s\", \"DevStatus\":\"%d\"},",
 			pRtspDev->cDevName, pRtspDev->cDevIp, pRtspDev->iDevPort,
-			pRtspDev->iDevChannel, pRtspDev->iIfOnline, cMacSn, pRtspDev->cDevId,
+			pRtspDev->iDevChannel, pRtspDev->iIfOnline, pRtspDev->cDevId,
 			pRtspDev->cDevLoginName, pRtspDev->iDevStatus);
 
 		strncat(pRtspListBuf, buf_var, iRtspListBufLen - strlen(pRtspListBuf));

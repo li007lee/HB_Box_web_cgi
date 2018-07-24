@@ -15,27 +15,17 @@ GLOB_INC_PATH := -I $(BOX_CGI_BASE_DIR)/inc
 
 ifeq ($(BOX_TYPE), small_box)
 
-BOX_TYPE_SUB?=big_small_box_single_mulip_port
-#BOX_TYPE_SUB?=big_small_box_single_port
-
 CC = arm-hisiv100nptl-linux-gcc
 STRIP = arm-hisiv100nptl-linux-strip
 GLOB_LIB_PATH := -L$(BOX_CGI_BASE_DIR)/lib/hisi100
 COMMON_LIB_PATH := $(BOX_CGI_BASE_DIR)/lib/hisi100
 COMMON_INC_PATH	:= $(BOX_CGI_BASE_DIR)/inc
 LIBFLAGS = -Wl,-rpath=/mnt/lib
-
-ifeq ($(BOX_TYPE_SUB), big_small_box_single_mulip_port)
 DEST_DIR:= /mnt/hgfs/nfs_dir/share_dir/hb/boa_small_box/boa_small_mul_ip/www/cgi_bin/
-else
-DEST_DIR:= /mnt/hgfs/nfs_dir/share_dir/hb/boa_small_box/boa_server/www/cgi_bin/
-endif
+
 endif
 
 ifeq ($(BOX_TYPE), small_box_hisi300)
-
-BOX_TYPE_SUB?=big_small_box_single_mulip_port
-#BOX_TYPE_SUB?=big_small_box_single_port
 
 CC = arm-hisiv300-linux-gcc
 STRIP = arm-hisiv300-linux-strip
@@ -43,12 +33,8 @@ GLOB_LIB_PATH := -L$(BOX_CGI_BASE_DIR)/lib/hisi300
 COMMON_LIB_PATH := $(BOX_CGI_BASE_DIR)/lib/hisi300
 COMMON_INC_PATH	:= $(BOX_CGI_BASE_DIR)/inc
 LIBFLAGS = -Wl,-rpath=/mnt/lib
-
-ifeq ($(BOX_TYPE_SUB), big_small_box_single_mulip_port)
 DEST_DIR:= /mnt/hgfs/nfs_dir/share_dir/hb/boa_small_box/boa_small_mul_ip/www/cgi_bin/
-else
-DEST_DIR:= /mnt/hgfs/nfs_dir/share_dir/hb/boa_small_box/boa_server/www/cgi_bin/
-endif
+
 endif
 
 
