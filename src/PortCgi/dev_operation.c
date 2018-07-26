@@ -1384,6 +1384,19 @@ HB_S32 DiscoverRtspDev()
 		HB_CHAR cOnvifServiceUrl[256] = {0};
 		HB_CHAR cSendToWeb[BUF_LEN_OF_JSON] = {0};
 
+		sqlite3 *db;
+		HB_CHAR *errmsg = NULL;
+		HB_S32 ret = 0;
+		HB_S32 errcode = 0;
+		//打开数据库
+		ret = sqlite3_open(BOX_DATA_BASE_NAME, &db);
+		if (ret != SQLITE_OK) {
+			WRITE_LOG("open db [%s] failed(%d)!\n", BOX_DATA_BASE_NAME, ret);
+			errcode = -1;
+			printf("{\"Result\":\"-227\",\"ErrMessage\":\"打开数据库出错了！\"}");
+			return -1;
+		}
+
 		strncpy(cSendToWeb, "{\"Result\":\"0\",\"OnvifServerAddr\":[", sizeof(cSendToWeb));
 		for (i=0;i<iArrySize;i++)
 		{
@@ -1391,18 +1404,44 @@ HB_S32 DiscoverRtspDev()
 			HB_CHAR cSql[512] = {0};
 			HB_CHAR cDevName[256] = {0};
 			memset(cOnvifServiceUrl, 0, sizeof(cOnvifServiceUrl));
+
 			snprintf(cOnvifServiceUrl, sizeof(cOnvifServiceUrl), "%s", cJSON_Print(pTaskList));
-			HB_CHAR *pStart = strstr(cOnvifServiceUrl, "//") + 2;
+			HB_CHAR *pStart = strstr(cOnvifServiceUrl, "//");
+			if (NULL != pStart)
+			{
+				pStart += 2;
+			}
+			else
+			{
+				pTaskList=pTaskList->next;
+				continue;
+			}
 			HB_CHAR *pEnd = strstr(pStart, ":");
 			if (pEnd == NULL)
 			{
 				pEnd = strstr(pStart, "/");
 			}
-			WRITE_LOG("cDevIp:[%s]\n", cDevIp);
 			strncpy(cDevIp, pStart, pEnd-pStart);
 			snprintf(cSql, sizeof(cSql), "select dev_name from onvif_dev_data where dev_ip='%s'", cDevIp);
 			WRITE_LOG("cSql:[%s]\n", cSql);
-			SqlOperation(cSql, BOX_DATA_BASE_NAME, search_rtsp_dev, (void *)cDevName);
+//			SqlOperation(cSql, BOX_DATA_BASE_NAME, search_rtsp_dev, (void *)cDevName);
+			ret = sqlite3_exec(db, cSql, search_rtsp_dev, (void *)cDevName, &errmsg);
+			if (ret != SQLITE_OK) {
+				WRITE_LOG("exec sql failed:[%s]\nerr message(%d):[%s]\n", cSql, ret, errmsg);
+				//设备id重复
+				if(!strcmp(errmsg, "UNIQUE constraint failed: dev_add_web_data.dev_id"))
+				{
+					sqlite3_free(errmsg);
+					sqlite3_close(db);
+					printf("{\"Result\":\"-227\",\"ErrMessage\":\"设备ID重复啦！\"}");
+					return -1;
+				}
+				sqlite3_free(errmsg);
+				sqlite3_close(db);
+				printf("{\"Result\":\"-227\",\"ErrMessage\":\"检索数据库出错了！\"}");
+				return -1;
+			}
+
 			if (strlen(cDevName) > 0)
 			{
 				pTaskList=pTaskList->next;
@@ -1417,6 +1456,8 @@ HB_S32 DiscoverRtspDev()
 			}
 			pTaskList=pTaskList->next;
 		}
+		sqlite3_free(errmsg);
+		sqlite3_close(db);
 
 		if (iFindDevFlag)
 		{
