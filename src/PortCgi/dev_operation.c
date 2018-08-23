@@ -1366,7 +1366,7 @@ HB_S32 DiscoverRtspDev()
 	}
 
 	WRITE_LOG("recv from mainctrl: [%s]\n", stBufCmd.cBuffer);
-
+#if 1
 	if(strstr(stBufCmd.cBuffer, "<ReturnCode>") != NULL)
 	{
 		printf("{\"Result\":\"-225\",\"ErrMessage\":\"未搜索到设备！-225\"}");
@@ -1472,7 +1472,15 @@ HB_S32 DiscoverRtspDev()
 			printf("{\"Result\":\"-227\",\"ErrMessage\":\"未搜索到新设备！-227\"}");
 		}
 	}
+#endif
 
+#if 0
+	HB_CHAR cSendToWeb[BUF_LEN_OF_JSON] = {0};
+	strncpy(cSendToWeb, \
+			"{\"Result\":\"0\",\"OnvifServerAddr\":[\"http://10.27.252.66:5091/onvif/device_service\",\"http://10.27.252.100/onvif/device_service\",\"http://10.27.252.108/onvif/device_service\",\"http://10.27.252.101/onvif/device_service\",\"http://10.27.252.77/onvif/device_service\",\"http://10.27.252.86/onvif/device_service\",\"http://10.27.252.82/onvif/device_service\",\"http://10.27.252.83/onvif/device_service\",\"http://10.27.252.80/onvif/device_service\",\"http://10.27.252.87/onvif/device_service\",\"http://10.27.252.202/onvif/device_service\",\"http://10.27.252.201/onvif/device_service\",\"http://10.27.252.8200/onvif/device_service\"]}", sizeof(cSendToWeb));
+	printf("%s", cSendToWeb);
+	WRITE_LOG("send to web:[%s]\n", cSendToWeb);
+#endif
 	return 0;
 }
 
