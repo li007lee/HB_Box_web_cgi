@@ -495,6 +495,13 @@ HB_S32 AddBoxDev(HB_S32 i_data_code, HB_CHAR *buf)
 				sscanf(p_pos_recv_buf, "<MapPort1>%[^<]</MapPort1><MapPort2>%[^<]</MapPort2><Serial>%[^<]</Serial><Chn>%[^<]</Chn>",
 								c_box_port1, c_box_port2, c_dev_id, c_dev_chns);
 
+				if (strlen(c_dev_id) < 1)
+				{
+					printf("{\"Result\":\"-7\",\"ErrMessage\":\"验证服务器返回设备ID为空！\"}");
+					error_code = -7;
+					goto ERR_RETURN;
+				}
+
 				//写数据库
 				//insert into dev_add_web_data (dev_type,dev_name,dev_id,dev_ip,dev_chns,dev_login_usr,dev_login_pwd,dev_port,box_port,dev_port2,box_port2,dev_state) values ()
 				memset(sql, 0, sizeof(sql));

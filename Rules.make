@@ -1,6 +1,6 @@
 #小盒子
-#BOX_TYPE?=small_box
-BOX_TYPE?=small_box_hisi300
+BOX_TYPE?=small_box
+#BOX_TYPE?=small_box_hisi300
 #BOX_TYPE?=big_box_single_port
 #BOX_TYPE?=big_box_multiple_port
 #BOX_TYPE?=big_box_encrypt
@@ -21,7 +21,7 @@ GLOB_LIB_PATH := -L$(BOX_CGI_BASE_DIR)/lib/hisi100
 COMMON_LIB_PATH := $(BOX_CGI_BASE_DIR)/lib/hisi100
 COMMON_INC_PATH	:= $(BOX_CGI_BASE_DIR)/inc
 LIBFLAGS = -Wl,-rpath=/mnt/lib
-DEST_DIR:= /mnt/hgfs/nfs_dir/share_dir/hb/boa_small_box/boa_small_mul_ip/www/cgi_bin/
+DEST_DIR:= /mnt/hgfs/ShareDir/share/work/boa_small_box/boa_small_mul_ip/www/cgi_bin/
 
 endif
 
@@ -33,7 +33,7 @@ GLOB_LIB_PATH := -L$(BOX_CGI_BASE_DIR)/lib/hisi300
 COMMON_LIB_PATH := $(BOX_CGI_BASE_DIR)/lib/hisi300
 COMMON_INC_PATH	:= $(BOX_CGI_BASE_DIR)/inc
 LIBFLAGS = -Wl,-rpath=/mnt/lib
-DEST_DIR:= /mnt/hgfs/nfs_dir/share_dir/hb/boa_small_box/boa_small_mul_ip/www/cgi_bin/
+DEST_DIR:= /mnt/hgfs/ShareDir/share/work/boa_small_box/boa_small_mul_ip/www/cgi_bin/
 
 endif
 
